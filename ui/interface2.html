@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CLINIC-SYS v2.14 (1998 build) - Outpatient Referral Module</title>
+</head>
+<body bgcolor="#C0C0C0" text="#000000" link="#0000FF" vlink="#800080">
+
+<center>
+<table border="3" cellpadding="8" cellspacing="0" bgcolor="#000080" width="600">
+    <tr>
+        <td align="center">
+            <font color="#FFFFFF" face="Times New Roman" size="5">
+                <b>*** CLINIC-SYS v2.14 ***</b><br>
+                <font size="3">Primary Care Referral Form (DO NOT REFRESH PAGE)</font>
+            </font>
+        </td>
+    </tr>
+</table>
+
+<br>
+
+<form id="referral-form">
+<table border="2" cellpadding="4" cellspacing="2" bgcolor="#D4D0C8" width="600">
+    <tr>
+        <td width="30%" bgcolor="#808080"><font color="#FFFFFF" face="Times New Roman"><b>Patient NHI:</b></font></td>
+        <td><input type="text" name="nhi_number" size="25" style="font-family: 'Courier New';" required></td>
+    </tr>
+    <tr>
+        <td bgcolor="#808080"><font color="#FFFFFF" face="Times New Roman"><b>Age:</b></font></td>
+        <td><input type="text" name="age" size="10" style="font-family: 'Courier New';" required></td>
+    </tr>
+    <tr>
+        <td bgcolor="#808080"><font color="#FFFFFF" face="Times New Roman"><b>Gender:</b></font></td>
+        <td><input type="text" name="gender" size="15" style="font-family: 'Courier New';"></td>
+    </tr>
+    <tr>
+        <td bgcolor="#808080"><font color="#FFFFFF" face="Times New Roman"><b>Known Conditions:</b></font></td>
+        <td><input type="text" name="conditions" size="40" style="font-family: 'Courier New';"></td>
+    </tr>
+    <tr>
+        <td bgcolor="#808080"><font color="#FFFFFF" face="Times New Roman"><b>Risk & History:</b></font></td>
+        <td><input type="text" name="riskNotes" size="40" style="font-family: 'Courier New';"></td>
+    </tr>
+    <tr>
+        <td bgcolor="#808080" valign="top"><font color="#FFFFFF" face="Times New Roman"><b>Clinical Notes:</b></font></td>
+        <td><textarea name="clinicalNotes" rows="5" cols="40" style="font-family: 'Courier New';"></textarea></td>
+    </tr>
+    <tr bgcolor="#C0C0C0">
+        <td colspan="2" align="center">
+            <br>
+            <input type="submit" value=" SUBMIT DATA TO HOST SYSTEM " style="font-family: 'Times New Roman'; font-weight: bold; height: 35px; background-color: #C0C0C0; border: 3px double #000000;">
+            <input type="reset" value=" CLEAR FORM " style="font-family: 'Times New Roman'; height: 35px; background-color: #C0C0C0; border: 3px double #000000;">
+            <br><br>
+        </td>
+    </tr>
+</table>
+</form>
+
+<font size="2" face="Times New Roman">
+    <i>Connected to Terminal Server #4 | Protocol: HTTP/1.0 | Best viewed in Netscape Navigator 4.0</i>
+</font>
+<pre id="result" hidden style="width: 600px; text-align: left; white-space: pre-wrap; font-family: 'Courier New'; background: #FFFFFF; border: 2px inset #808080; padding: 6px;"></pre>
+</center>
+
+<script>
+    // Builds the Format B referral JSON. Not sent anywhere yet: POSTing it to the S3 intake
+    // bucket (format-b/) comes later, so for now it is only shown on the page.
+    const pad = (n) => String(n).padStart(2, "0");
+    document.getElementById("referral-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const f = new FormData(event.target);
+        const now = new Date();
+        const payload = {
+            patient: {
+                // "identifier" is what the Snowflake Format B parser reads (referral_intake.tf).
+                identifier: f.get("nhi_number"),
+                demographics: { age: Number(f.get("age")), gender: f.get("gender") },
+                clinicalHistory: { conditions: f.get("conditions"), riskNotes: f.get("riskNotes") },
+            },
+            referral: {
+                clinicalNotes: f.get("clinicalNotes"),
+                facility: "FAC-001",
+                referringGp: "GP-00123",
+                // DD-MM-YYYY HH:MM, local time
+                timestamp: `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`,
+            },
+        };
+        const result = document.getElementById("result");
+        result.textContent = JSON.stringify({ message: "Referral successfully submitted via legacy portal!", sent_json: payload }, null, 2);
+        result.hidden = false;
+    });
+</script>
+
+</body>
+</html>

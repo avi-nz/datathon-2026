@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Healthcare Referral Gateway</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; max-width: 550px; margin: 30px auto; padding: 25px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: #f8fafc; }
+        h2 { color: #0f172a; margin-top: 0; }
+        .sub { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+        .field { margin-bottom: 12px; }
+        label { display: block; font-weight: 600; color: #334155; margin-bottom: 4px; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #94a3b8; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        textarea { height: 80px; }
+        button { background: #2563eb; color: white; padding: 10px; border: none; border-radius: 4px; width: 100%; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+    <h2>Healthcare Referral Gateway</h2>
+    <div class="sub">Patient Referral Submission Form</div>
+    <form id="referral-form">
+        <div class="field"><label>NHI Number</label><input type="text" name="nhi_number" placeholder="e.g. ABC1234" required></div>
+        <div class="field"><label>Age</label><input type="number" name="age" placeholder="e.g. 45" required></div>
+        <div class="field"><label>Gender</label><input type="text" name="gender" placeholder="e.g. Female / Male / Other"></div>
+        <div class="field"><label>Existing Medical Conditions</label><input type="text" name="existing_conditions" placeholder="e.g. diabetes, hypertension"></div>
+        <div class="field"><label>Patient Risk History</label><input type="text" name="risk_history" placeholder="e.g. previous urgent admission"></div>
+        <div class="field"><label>GP Clinical Summary & Notes</label><textarea name="gp_notes" placeholder="Enter clinical notes and symptoms..."></textarea></div>
+        <button type="submit">Submit Referral</button>
+    </form>
+    <pre id="result" hidden style="white-space: pre-wrap; background: #fff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; font-size: 13px;"></pre>
+
+    <script>
+        // Builds the Format A referral JSON. Not sent anywhere yet: POSTing it to the S3 intake
+        // bucket (format-a/) comes later, so for now it is only shown on the page.
+        const pad = (n) => String(n).padStart(2, "0");
+        document.getElementById("referral-form").addEventListener("submit", (event) => {
+            event.preventDefault();
+            const f = new FormData(event.target);
+            const now = new Date();
+            const payload = {
+                nhi_number: f.get("nhi_number"),
+                age: Number(f.get("age")),
+                gender: f.get("gender"),
+                existing_conditions: f.get("existing_conditions"),
+                risk_history: f.get("risk_history"),
+                gp_notes: f.get("gp_notes"),
+                facility_id: "FAC-001",
+                submitting_gp_id: "GP-00123",
+                // YYYY-MM-DDTHH:MM:SS, local time
+                submitted_at: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
+            };
+            const result = document.getElementById("result");
+            result.textContent = JSON.stringify({ message: "Referral successfully submitted!", sent_json: payload }, null, 2);
+            result.hidden = false;
+        });
+    </script>
+</body>
+</html>
