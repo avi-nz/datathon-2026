@@ -224,9 +224,10 @@ __marimo__/
 *.tfvars
 crash.log
 
-# Exported referral data for the UI (contains patient information)
-ui/data/
-
-# Lambda build output for the referral API (infra/lambda.tf)
+# Lambda build output for the referral API (infrastructure/terraform/lambda.tf)
 backend/build/
 backend/dist/
+
+# Editor / OS files
+.idea/
+.DS_Store

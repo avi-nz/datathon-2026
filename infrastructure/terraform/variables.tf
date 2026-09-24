@@ -1,0 +1,68 @@
+variable "aws_region" {
+  description = "AWS region for the S3 bucket."
+  type        = string
+  default     = "ap-southeast-2"
+}
+
+variable "project_name" {
+  description = "Project name, used in resource names and tags."
+  type        = string
+  default     = "datathon-2026"
+}
+
+variable "environment" {
+  description = "Deployment environment (e.g. dev, prod)."
+  type        = string
+  default     = "dev"
+}
+
+variable "price_class" {
+  description = "CloudFront price class."
+  type        = string
+  default     = "PriceClass_100"
+}
+
+variable "snowflake_warehouse_size" {
+  description = "Size of the Snowflake warehouse."
+  type        = string
+  default     = "XSMALL"
+}
+
+variable "referral_load_schedule_minutes" {
+  description = "How often (minutes) Snowflake loads new referral files from S3 and standardizes them."
+  type        = number
+  default     = 60
+}
+
+# Snowflake login the referral API (lambda.tf) reads the triage view with: the
+# AI_PIPELINE_SVC user, same values as SNOWFLAKE_* in backend/.env.
+# Set via TF_VAR_snowflake_api_* in infrastructure/terraform/.env.
+variable "snowflake_api_account" {
+  description = "Snowflake account identifier for the referral API (e.g. ORG-ACCOUNT)."
+  type        = string
+}
+
+variable "snowflake_api_user" {
+  description = "Snowflake user the referral API connects as."
+  type        = string
+}
+
+variable "snowflake_api_password" {
+  description = "Password for snowflake_api_user."
+  type        = string
+  sensitive   = true
+}
+
+# Where the GP portal pages upload referrals (POST /interface1|2/upload). This is the bucket the
+# Snowflake stages currently read from: a hand-made bucket, not the Terraform one in referral_intake.tf.
+variable "intake_upload_bucket" {
+  description = "S3 bucket the referral API writes GP portal submissions to (format-a/, format-b/)."
+  type        = string
+  default     = "referral-intake-bucket"
+}
+
+variable "snowflake_api_warehouse" {
+  description = "Warehouse the referral API runs its query on."
+  type        = string
+  default     = "COMPUTE_WH"
+}
