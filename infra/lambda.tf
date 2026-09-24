@@ -1,5 +1,5 @@
 # Referral API: a FastAPI app (backend/app.py) on Lambda that returns
-# OUTPUT_UI.PUBLIC.REFERRAL_TRIAGE_VIEW as JSON at GET <function URL>/referrals.
+# OUTPUT_UI.PUBLIC.REFERRAL_TRIAGE_VIEW as JSON at GET https://<website CloudFront>/referrals.
 # Terraform builds the package too: pip-installs the dependencies with uv, then zips them.
 
 locals {
@@ -79,13 +79,41 @@ resource "aws_lambda_function" "referral_api" {
   }
 }
 
-# A public HTTPS URL for the function, no API Gateway needed.
+# HTTPS URL for the function. AWS_IAM auth means only signed requests get through:
+# the website CloudFront distribution (cloudfront.tf) serves it at /referrals and signs
+# each request with the origin access control below. Direct calls get a 403.
 resource "aws_lambda_function_url" "referral_api" {
   function_name      = aws_lambda_function.referral_api.function_name
-  authorization_type = "NONE"
+  authorization_type = "AWS_IAM"
+}
 
-  cors {
-    allow_origins = ["*"]
-    allow_methods = ["GET"]
-  }
+locals {
+  # https://<id>.lambda-url.<region>.on.aws/ -> <id>.lambda-url.<region>.on.aws, the CloudFront origin.
+  referral_api_domain = trimsuffix(trimprefix(aws_lambda_function_url.referral_api.function_url, "https://"), "/")
+}
+
+resource "aws_cloudfront_origin_access_control" "referral_api" {
+  name                              = "${var.project_name}-${var.environment}-referral-api"
+  origin_access_control_origin_type = "lambda"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# CloudFront needs both permissions to call a function URL, and only this distribution gets them.
+resource "aws_lambda_permission" "referral_api_cloudfront_url" {
+  statement_id           = "AllowCloudFrontInvokeFunctionUrl"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.referral_api.function_name
+  principal              = "cloudfront.amazonaws.com"
+  source_arn             = aws_cloudfront_distribution.site.arn
+  function_url_auth_type = "AWS_IAM"
+}
+
+resource "aws_lambda_permission" "referral_api_cloudfront_invoke" {
+  statement_id             = "AllowCloudFrontInvokeFunction"
+  action                   = "lambda:InvokeFunction"
+  function_name            = aws_lambda_function.referral_api.function_name
+  principal                = "cloudfront.amazonaws.com"
+  source_arn               = aws_cloudfront_distribution.site.arn
+  invoked_via_function_url = true
 }

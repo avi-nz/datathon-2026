@@ -35,5 +35,5 @@ output "output_ui_database" {
 }
 
 output "referral_api_url" {
-  value = aws_lambda_function_url.referral_api.function_url
+  value = "https://${aws_cloudfront_distribution.site.domain_name}/referrals"
 }

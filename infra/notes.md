@@ -22,5 +22,5 @@ What Terraform in this folder manages, as of 2026-09-24 (47 resources in state).
 | Referral intake | S3 bucket `datathon-2026-dev-referral-intake-…`, its policy and public-access block | `referral_intake.tf` |
 | Snowflake access | IAM role and read-only policy that Snowflake assumes to read the bucket | `referral_intake.tf` |
 | Website | S3 bucket, its policy and public-access block, the CloudFront distribution and its origin access control | `s3.tf`, `cloudfront.tf` |
-| Referral API | Lambda `datathon-2026-dev-referral-api` (FastAPI, `GET /referrals` returns the triage view as JSON), its public function URL and IAM role. Terraform builds the package from `backend/` with uv | `lambda.tf` |
+| Referral API | Lambda `datathon-2026-dev-referral-api` (FastAPI, `GET /referrals` returns the triage view as JSON), served by the website CloudFront distribution at `/referrals`. Its function URL is IAM-only, so only CloudFront (via origin access control) can call it. Terraform builds the package from `backend/` with uv | `lambda.tf` |
 
