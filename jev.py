@@ -66,5 +66,3 @@ def classify_referral(gp_note):
     result = response.json()
 
     return result["answers"]["urgency"]
-
-
