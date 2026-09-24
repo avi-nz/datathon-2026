@@ -63,10 +63,23 @@
 </center>
 
 <script>
-    // Builds the Format B referral JSON. Not sent anywhere yet: POSTing it to the S3 intake
-    // bucket (format-b/) comes later, so for now it is only shown on the page.
+    // Builds the Format B referral JSON and uploads it to the S3 intake bucket (format-b/).
     const pad = (n) => String(n).padStart(2, "0");
-    document.getElementById("referral-form").addEventListener("submit", (event) => {
+    // POSTs the referral to the API, which saves it in the S3 intake bucket. CloudFront signs
+    // requests to the API and needs the SHA-256 of the body in x-amz-content-sha256 to do so.
+    async function upload(payload) {
+        const body = JSON.stringify(payload);
+        const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body));
+        const hex = [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("");
+        const response = await fetch("/interface2/upload", {
+            method: "POST",
+            headers: { "content-type": "application/json", "x-amz-content-sha256": hex },
+            body,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    }
+    document.getElementById("referral-form").addEventListener("submit", async (event) => {
         event.preventDefault();
         const f = new FormData(event.target);
         const now = new Date();
@@ -86,8 +99,14 @@
             },
         };
         const result = document.getElementById("result");
-        result.textContent = JSON.stringify({ message: "Referral successfully submitted via legacy portal!", sent_json: payload }, null, 2);
         result.hidden = false;
+        result.textContent = "Submitting...";
+        try {
+            const saved = await upload(payload);
+            result.textContent = JSON.stringify({ message: "Referral successfully submitted via legacy portal!", saved_as: saved.key, sent_json: payload }, null, 2);
+        } catch (error) {
+            result.textContent = `Submission failed: ${error.message}`;
+        }
     });
 </script>
 
