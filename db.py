@@ -5,7 +5,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+REQUIRED_ENV = ["SNOWFLAKE_ACCOUNT", "SNOWFLAKE_USER", "SNOWFLAKE_PASSWORD", "SNOWFLAKE_WAREHOUSE"]
+
 def get_connection():
+    missing = [name for name in REQUIRED_ENV if not os.getenv(name)]
+    if missing:
+        raise ValueError(f"Missing Snowflake settings in .env: {', '.join(missing)}")
     return snowflake.connector.connect(
         account=os.getenv("SNOWFLAKE_ACCOUNT"),
         user=os.getenv("SNOWFLAKE_USER"),

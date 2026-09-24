@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Referral Triage</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="window">
+    <div class="toolbar">
+      <span class="app-title">Referral Triage &mdash; Coordinator Queue</span>
+      <div class="toolbar-buttons">
+        <label class="search">Search <input type="search" id="search" aria-label="Search referrals"></label>
+        <button type="button" id="refresh" class="tb-button primary"><u>R</u>efresh</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <nav class="sidebar" id="sidebar" aria-label="Urgency categories"></nav>
+
+      <main class="content">
+        <div class="notice" id="notice" hidden></div>
+
+        <div class="section-heading" id="section-heading"></div>
+        <p class="hint" id="section-hint"></p>
+
+        <div class="grid-wrap">
+          <table class="grid">
+            <thead>
+              <tr>
+                <th class="col-conf">Confidence &#9660;</th>
+                <th class="col-id">Referral number</th>
+                <th class="col-nhi">NHI</th>
+                <th class="col-age">Age</th>
+                <th>Reason for referral</th>
+                <th class="col-flag">Flag</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+
+        <div id="detail"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="data/referrals.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

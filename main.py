@@ -2,6 +2,7 @@ import json
 from jev import classify_referral
 from bedrock import generate_explanation
 from db import fetch_unprocessed_referrals, store_result
+from export_ui import export_ui_data
 
 
 def process_referral(referral_id, gp_note):
@@ -31,6 +32,9 @@ def main():
         result = process_referral(r["referral_id"], r["reason_text"])
         store_result(result)
         print(json.dumps(result, indent=2))
+
+    count = export_ui_data()
+    print(f"Exported {count} referrals for the UI")
 
 if __name__ == "__main__":
     main()

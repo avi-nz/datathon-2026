@@ -223,3 +223,6 @@ __marimo__/
 *.tfstate.*
 *.tfvars
 crash.log
+
+# Exported referral data for the UI (contains patient information)
+ui/data/
