@@ -79,3 +79,128 @@ resource "snowflake_grant_privileges_to_account_role" "analyst_triage_view" {
     object_name = snowflake_view.referral_triage.fully_qualified_name
   }
 }
+
+# ---------- DATA_ENGINEER_ROLE: builds and loads the pipeline ----------
+# Mirrors snowflake/security_setup.sql.
+resource "snowflake_account_role" "data_engineer" {
+  name = "DATA_ENGINEER_ROLE"
+}
+
+locals {
+  data_engineer_role = snowflake_account_role.data_engineer.name
+}
+
+resource "snowflake_grant_privileges_to_account_role" "data_engineer_warehouse" {
+  account_role_name = local.data_engineer_role
+  privileges        = ["USAGE"]
+
+  on_account_object {
+    object_type = "WAREHOUSE"
+    object_name = snowflake_warehouse.main.name
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "data_engineer_database" {
+  for_each = toset([snowflake_database.main.name, snowflake_database.output_ui.name])
+
+  account_role_name = local.data_engineer_role
+  privileges        = ["USAGE"]
+
+  on_account_object {
+    object_type = "DATABASE"
+    object_name = each.key
+  }
+}
+
+# USAGE on both schemas, plus the right to create objects in them: tables, stages,
+# pipes and views in REFERRAL_TRIAGE.PUBLIC, and views only in OUTPUT_UI.PUBLIC.
+resource "snowflake_grant_privileges_to_account_role" "data_engineer_schema" {
+  for_each = {
+    (snowflake_database.main.name)      = ["USAGE", "CREATE TABLE", "CREATE STAGE", "CREATE PIPE", "CREATE VIEW"]
+    (snowflake_database.output_ui.name) = ["USAGE", "CREATE VIEW"]
+  }
+
+  account_role_name = local.data_engineer_role
+  privileges        = each.value
+
+  on_schema {
+    schema_name = "\"${each.key}\".\"${local.schema}\""
+  }
+}
+
+# Read and load every table in REFERRAL_TRIAGE.PUBLIC (raw and standardized).
+# Like the SQL's ON ALL TABLES, this covers the tables that exist when it is applied.
+resource "snowflake_grant_privileges_to_account_role" "data_engineer_referral_tables" {
+  account_role_name = local.data_engineer_role
+  privileges        = ["INSERT", "SELECT"]
+
+  on_schema_object {
+    all {
+      object_type_plural = "TABLES"
+      in_schema          = "\"${snowflake_database.main.name}\".\"${local.schema}\""
+    }
+  }
+
+  depends_on = [snowflake_table.this]
+}
+
+resource "snowflake_grant_privileges_to_account_role" "data_engineer_ai_results" {
+  account_role_name = local.data_engineer_role
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    object_type = "TABLE"
+    object_name = snowflake_table.this["AI_REFERRAL_RESULTS"].fully_qualified_name
+  }
+}
+
+# ---------- VIEWER_ROLE: read-only access to the triage view ----------
+# Mirrors snowflake/security_setup.sql.
+# A view runs with its owner's privileges, so this role can read the view without
+# any access to the REFERRAL_TRIAGE tables behind it.
+resource "snowflake_account_role" "viewer" {
+  name = "VIEWER_ROLE"
+}
+
+locals {
+  viewer_role = snowflake_account_role.viewer.name
+}
+
+resource "snowflake_grant_privileges_to_account_role" "viewer_warehouse" {
+  account_role_name = local.viewer_role
+  privileges        = ["USAGE"]
+
+  on_account_object {
+    object_type = "WAREHOUSE"
+    object_name = snowflake_warehouse.main.name
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "viewer_database" {
+  account_role_name = local.viewer_role
+  privileges        = ["USAGE"]
+
+  on_account_object {
+    object_type = "DATABASE"
+    object_name = snowflake_database.output_ui.name
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "viewer_schema" {
+  account_role_name = local.viewer_role
+  privileges        = ["USAGE"]
+
+  on_schema {
+    schema_name = "\"${snowflake_database.output_ui.name}\".\"${local.schema}\""
+  }
+}
+
+resource "snowflake_grant_privileges_to_account_role" "viewer_triage_view" {
+  account_role_name = local.viewer_role
+  privileges        = ["SELECT"]
+
+  on_schema_object {
+    object_type = "VIEW"
+    object_name = snowflake_view.referral_triage.fully_qualified_name
+  }
+}
