@@ -21,3 +21,15 @@ variable "price_class" {
   type        = string
   default     = "PriceClass_100"
 }
+
+variable "snowflake_role" {
+  description = "Snowflake role Terraform runs as."
+  type        = string
+  default     = "SYSADMIN"
+}
+
+variable "snowflake_warehouse_size" {
+  description = "Size of the Snowflake warehouse."
+  type        = string
+  default     = "XSMALL"
+}
