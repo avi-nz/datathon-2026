@@ -1,4 +1,13 @@
 <!doctype html>
+<!--
+  Referral Triage: coordinator queue UI.
+
+  This page is only the skeleton. The sidebar tabs, table rows and detail form are filled in
+  by app.js using the data in data/referrals.js (written by export_ui.py).
+
+  To use: run `python export_ui.py`, then open this file in a browser (double-clicking works).
+-->
+
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -8,15 +17,18 @@
 </head>
 <body>
   <div class="window">
+
     <div class="toolbar">
       <span class="app-title">Referral Triage &mdash; Coordinator Queue</span>
       <div class="toolbar-buttons">
         <label class="search">Search <input type="search" id="search" aria-label="Search referrals"></label>
+        <!-- Refresh just reloads the page, which re-reads data/referrals.js after a new export. -->
         <button type="button" id="refresh" class="tb-button primary"><u>R</u>efresh</button>
       </div>
     </div>
 
     <div class="layout">
+      <!-- Urgency tabs, built by app.js. -->
       <nav class="sidebar" id="sidebar" aria-label="Urgency categories"></nav>
 
       <main class="content">
@@ -25,6 +37,7 @@
         <div class="section-heading" id="section-heading"></div>
         <p class="hint" id="section-hint"></p>
 
+        <!-- Scrolls on its own so a long list doesn't push the detail form off screen. -->
         <div class="grid-wrap">
           <table class="grid">
             <thead>
@@ -37,15 +50,19 @@
                 <th class="col-flag">Flag</th>
               </tr>
             </thead>
+            <!-- One row per referral, built by app.js. -->
             <tbody id="rows"></tbody>
           </table>
         </div>
 
+        <!-- Detail form for the selected referral, built by app.js. -->
         <div id="detail"></div>
       </main>
     </div>
   </div>
 
+  <!-- Order matters: data/referrals.js sets window.REFERRAL_DATA, which app.js then reads.
+       If the data file is missing, the browser skips it and app.js shows an error banner. -->
   <script src="data/referrals.js"></script>
   <script src="app.js"></script>
 </body>

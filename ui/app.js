@@ -1,8 +1,22 @@
+/*
+ * app.js: builds the Referral Triage page.
+ *
+ * Flow:
+ *   1. data/referrals.js (written by export_ui.py) runs first and sets window.REFERRAL_DATA.
+ *   2. load() reads that data and cleans each referral up with prepare().
+ *   3. render() groups referrals by urgency, sorts each group by Jev confidence, and draws the
+ *      sidebar tabs, the table and the detail form.
+ *   4. Clicking a tab, clicking a row, or typing in search changes `state`, then calls render() again.
+ *
+ * No frameworks or libraries: plain JavaScript that runs in any modern browser.
+ */
+
 const DATA_URL = "data/referrals.js";
 
 // Referrals below this Jev confidence get a "Review" flag.
 const LOW_CONFIDENCE = 0.6;
 
+// Sidebar tabs, in display order. "pending" holds referrals not yet processed by Jev/Claude.
 const SECTIONS = [
   { key: "urgent", label: "Urgent" },
   { key: "semi-urgent", label: "Semi-urgent" },
@@ -12,6 +26,7 @@ const SECTIONS = [
 
 const URGENCY_ORDER = ["urgent", "semi-urgent", "routine"];
 
+// Everything that can change while the page is open. render() redraws the page from this.
 const state = {
   referrals: [],
   generatedAt: null,
@@ -20,7 +35,11 @@ const state = {
 };
 
 // ---------- data helpers ----------
+// These are deliberately forgiving about input format (casing, 0-1 vs 0-100, JSON strings),
+// so small changes in the pipeline's output don't break the UI.
 
+// Maps a Jev classification to a section key, e.g. "Semi Urgent" / "semi_urgent" -> "semi-urgent".
+// Anything empty or unrecognised counts as "pending".
 function normaliseUrgency(value) {
   if (!value) return "pending";
   const key = String(value).trim().toLowerCase().replace(/[\s_]+/g, "-");
@@ -36,6 +55,7 @@ function parseMaybeJson(value) {
   }
 }
 
+// Returns a 0-1 fraction; values above 1 are treated as percentages.
 function toFraction(value) {
   const n = Number(value);
   if (value === null || value === undefined || Number.isNaN(n)) return null;
@@ -49,11 +69,13 @@ function normaliseProbabilities(raw) {
   for (const [key, value] of Object.entries(parsed)) {
     const fraction = toFraction(value);
     const urgency = normaliseUrgency(key);
+    // Unexpected keys are kept as-is so they still show up rather than silently disappearing.
     if (fraction !== null) result[urgency === "pending" ? key : urgency] = fraction;
   }
   return result;
 }
 
+// Turns Claude's {"reason_1": ..., "reason_2": ..., "reason_3": ...} into an ordered list.
 function normaliseReasons(raw) {
   const parsed = parseMaybeJson(raw);
   if (!parsed) return [];
@@ -66,6 +88,7 @@ function normaliseReasons(raw) {
   return [String(parsed)];
 }
 
+// Cleans up one exported row. Done once on load so rendering never has to re-clean anything.
 function prepare(row) {
   const urgency = normaliseUrgency(row.classification);
   const probabilities = normaliseProbabilities(row.probabilities);
@@ -73,6 +96,7 @@ function prepare(row) {
   const confidence = toFraction(row.confidence) ?? probabilities[urgency] ?? null;
   const reasons = normaliseReasons(row.justification);
   const lowConfidence = urgency !== "pending" && confidence !== null && confidence < LOW_CONFIDENCE;
+  // Pre-built once so filtering on every keystroke stays fast.
   const searchText = [row.referral_id, row.nhi_number, row.reason_text, row.recommendation, ...reasons]
     .filter(Boolean)
     .join(" ")
@@ -80,6 +104,7 @@ function prepare(row) {
   return { ...row, urgency, probabilities, confidence, reasons, lowConfidence, searchText };
 }
 
+// Highest confidence first; referrals with no confidence sink to the bottom.
 function byConfidenceDesc(a, b) {
   return (b.confidence ?? -1) - (a.confidence ?? -1);
 }
@@ -90,6 +115,10 @@ function labelFor(key) {
 
 // ---------- DOM helpers ----------
 
+// Creates an element: el("td", { class: "num" }, "73%") -> <td class="num">73%</td>.
+// Attributes starting with "on" become event listeners. null/false children are skipped,
+// which allows `condition && el(...)` for optional parts.
+// Text is always added as text nodes, never raw HTML, so content from GP notes can't inject markup.
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(attrs)) {
@@ -110,6 +139,7 @@ function formatPercent(fraction) {
   return fraction === null || fraction === undefined ? "—" : `${Math.round(fraction * 100)}%`;
 }
 
+// Shows missing values as an em dash so fields never look broken.
 function display(value) {
   return value === null || value === undefined || value === "" ? "—" : String(value);
 }
@@ -120,10 +150,12 @@ function meter(fraction) {
 
 // ---------- grouping ----------
 
+// Applies the search filter, splits referrals into sections, and sorts each by confidence.
 function groupedReferrals() {
   const query = document.getElementById("search").value.trim().toLowerCase();
   const visible = query ? state.referrals.filter((r) => r.searchText.includes(query)) : state.referrals;
 
+  // Every section starts with an empty list so tabs with 0 referrals still appear.
   const grouped = Object.fromEntries(SECTIONS.map((s) => [s.key, []]));
   for (const referral of visible) grouped[referral.urgency].push(referral);
   for (const list of Object.values(grouped)) list.sort(byConfidenceDesc);
@@ -131,7 +163,10 @@ function groupedReferrals() {
 }
 
 // ---------- rendering ----------
+// Each render function rebuilds its part of the page from scratch. Simpler than updating
+// in place, and fast enough for a few hundred referrals.
 
+// Blue tabs down the left, each with a summary like the eReferral sidebar.
 function renderSidebar(grouped) {
   const tabs = SECTIONS.map((s) => {
     const list = grouped[s.key];
@@ -145,6 +180,7 @@ function renderSidebar(grouped) {
             flagged ? `${flagged} flagged for review` : "None flagged for review",
           ];
 
+    // Real <button>s so tabs work with the keyboard.
     return el(
       "button",
       {
@@ -153,10 +189,11 @@ function renderSidebar(grouped) {
         "aria-pressed": s.key === state.section ? "true" : "false",
         onclick: () => {
           state.section = s.key;
-          state.selectedId = null;
+          state.selectedId = null; // render() then auto-selects the top referral
           render();
         },
       },
+      // First letter underlined to mimic old-style keyboard-shortcut hints.
       el("strong", {}, el("span", { class: `dot dot-${s.key}` }), el("span", { class: "key" }, s.label[0]), s.label.slice(1)),
       lines.map((line) => el("div", {}, line))
     );
@@ -170,6 +207,7 @@ function renderRows(list) {
     el(
       "tr",
       {
+        // Focusable, and selectable with Enter/Space, so the table is usable without a mouse.
         tabindex: "0",
         class: r.referral_id === state.selectedId ? "selected" : null,
         onclick: () => select(r.referral_id),
@@ -184,6 +222,7 @@ function renderRows(list) {
       el("td", {}, display(r.referral_id)),
       el("td", {}, display(r.nhi_number)),
       el("td", { class: "num" }, display(r.patient_age)),
+      // Truncated by CSS; the full note shows on hover.
       el("td", { class: "reason", title: r.reason_text ?? "" }, display(r.reason_text)),
       el("td", {}, r.lowConfidence ? el("span", { class: "flag-review" }, "Review") : "")
     )
@@ -194,6 +233,9 @@ function renderRows(list) {
     .replaceChildren(...(rows.length ? rows : [el("tr", {}, el("td", { class: "empty", colspan: "6" }, "No referrals in this category."))]));
 }
 
+// One labelled field in the detail form. The values are read-only; "input"/"textarea" boxes
+// just make them look like the old eReferral form fields. `required` adds a purely visual
+// red asterisk, copied from the reference UI.
 function field(label, value, { full = false, required = false, box = null } = {}) {
   const content =
     box === "input"
@@ -209,7 +251,9 @@ function field(label, value, { full = false, required = false, box = null } = {}
   );
 }
 
+// "Urgency | Probability" table with the chosen urgency highlighted.
 function renderProbabilities(referral) {
+  // Known levels in fixed order first, then any unexpected keys.
   const keys = [...URGENCY_ORDER, ...Object.keys(referral.probabilities).filter((k) => !URGENCY_ORDER.includes(k))].filter(
     (k) => k in referral.probabilities
   );
@@ -234,6 +278,8 @@ function renderProbabilities(referral) {
   );
 }
 
+// Detail form for the selected referral: Referral -> Patient -> GP note -> AI Triage Assessment.
+// The AI section is omitted for referrals that haven't been processed yet.
 function renderDetail(referral) {
   const container = document.getElementById("detail");
   if (!referral) {
@@ -300,7 +346,8 @@ function render() {
   const grouped = groupedReferrals();
   const list = grouped[state.section];
 
-  // Keep the current selection if it is still visible, otherwise show the top referral.
+  // Keep the current selection if it's still visible (e.g. after searching), otherwise show
+  // the top referral so the detail form is never empty when there's something to show.
   if (!list.some((r) => r.referral_id === state.selectedId)) state.selectedId = list[0]?.referral_id ?? null;
 
   renderSidebar(grouped);
@@ -314,6 +361,7 @@ function render() {
 function select(referralId) {
   state.selectedId = referralId;
   render();
+  // render() replaced the rows, so restore keyboard focus to the newly selected one.
   document.querySelector("#rows tr.selected")?.focus();
 }
 
@@ -327,7 +375,7 @@ function showNotice(message, isError = false) {
 }
 
 function load() {
-  // Set by data/referrals.js, which export_ui.py writes.
+  // Set by data/referrals.js; undefined if that file is missing.
   const data = window.REFERRAL_DATA;
   if (!data) {
     showNotice(`Unable to load ${DATA_URL}. Run "python export_ui.py" and then refresh this page.`, true);

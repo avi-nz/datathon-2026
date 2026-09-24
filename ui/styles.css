@@ -1,17 +1,22 @@
-/* Deliberately styled after a mid-2000s clinical eReferral system. */
+/*
+ * styles.css: visual styling for the Referral Triage page.
+ *
+ * Deliberately styled after a mid-2000s clinical eReferral system: small Tahoma text,
+ * blue-grey backgrounds, blue sidebar tabs, grey gradient table headers and square white
+ * form boxes. It's light-only on purpose; old clinical systems had no dark mode.
+ */
 
+/* ---- colour palette ---- */
 :root {
   --page: #d9e2ec;
-  --panel: #dde5ee;
   --white: #ffffff;
   --text: #1a1a1a;
   --label: #1f2d3d;
   --muted: #4a4a4a;
   --rule: #a9b7c6;
-  --border: #7f9db9;
+  --border: #7f9db9; /* classic Windows XP input-box blue */
 
   --tab: #6b9bd1;
-  --tab-dark: #4a7fbf;
   --tab-selected: #eef2f7;
 
   --toolbar-blue: #2a4f9e;
@@ -40,12 +45,13 @@ body {
   font: 12px/1.35 Tahoma, Verdana, "Segoe UI", Arial, sans-serif;
 }
 
+/* The outer "application window". */
 .window {
   max-width: 1200px;
   margin: 0 auto;
   border: 1px solid #5f7a99;
   background: var(--page);
-  box-shadow: 2px 2px 0 #8a9bb0;
+  box-shadow: 2px 2px 0 #8a9bb0; /* hard, unblurred shadow for the dated look */
 }
 
 /* ---- top toolbar ---- */
@@ -76,8 +82,8 @@ body {
   background: var(--white);
 }
 
-.tb-button,
-.button {
+/* Classic grey gradient Windows-style button. */
+.tb-button {
   font: inherit;
   padding: 3px 12px;
   border: 1px solid #8a8a8a;
@@ -87,11 +93,10 @@ body {
   cursor: pointer;
 }
 
-.tb-button:hover,
-.button:hover { background: linear-gradient(#ffffff, #e8eef6); border-color: #3c7fb1; }
-.tb-button:active,
-.button:active { background: linear-gradient(#d4d4d4, #f0f0f0); }
+.tb-button:hover { background: linear-gradient(#ffffff, #e8eef6); border-color: #3c7fb1; }
+.tb-button:active { background: linear-gradient(#d4d4d4, #f0f0f0); }
 
+/* Solid dark blue, like "Submit" in the reference screenshots. */
 .tb-button.primary {
   background: var(--toolbar-blue);
   border-color: #1b356e;
@@ -101,6 +106,7 @@ body {
 .tb-button.primary:hover { background: #3560b8; }
 
 /* ---- layout ---- */
+/* minmax(0, 1fr) lets the content column shrink, so wide tables can't push the page sideways. */
 .layout {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
@@ -114,6 +120,7 @@ body {
   border-right: 1px solid var(--rule);
 }
 
+/* Rounded on the left and open on the right, so tabs look attached to the content area. */
 .tab {
   display: block;
   width: 100%;
@@ -132,6 +139,7 @@ body {
 
 .tab:hover { background: linear-gradient(90deg, #7fadde, #8db6e3); }
 
+/* Shifts 1px right to cover the sidebar's border, so the selected tab merges into the content. */
 .tab.selected {
   background: var(--tab-selected);
   border-color: var(--rule);
@@ -155,6 +163,7 @@ body {
 /* ---- main content ---- */
 .content { padding: 8px 12px 16px; min-width: 0; }
 
+/* Styled after the "Form parked successfully" banner in the reference UI. */
 .notice {
   margin-bottom: 8px;
   padding: 6px 10px;
@@ -170,7 +179,8 @@ body {
 .section-heading { font-size: 13px; font-weight: bold; color: var(--label); }
 .hint { margin: 2px 0 6px; color: var(--muted); }
 
-/* ---- data grid ---- */
+/* ---- referral table ---- */
+/* Scrolls on its own so the detail form below stays visible. */
 .grid-wrap {
   max-height: 320px;
   overflow: auto;
@@ -181,7 +191,7 @@ body {
 .grid { width: 100%; border-collapse: collapse; }
 
 .grid th {
-  position: sticky;
+  position: sticky; /* header stays visible while the table scrolls */
   top: 0;
   padding: 4px 6px;
   border: 1px solid #b5b5b5;
@@ -199,12 +209,14 @@ body {
   vertical-align: top;
 }
 
+/* Order matters: selected beats hover, which beats the zebra stripes. */
 .grid tbody tr:nth-child(even) { background: var(--row-alt); }
 .grid tbody tr { cursor: pointer; }
 .grid tbody tr:hover { background: var(--row-hover); }
 .grid tbody tr:focus { outline: 1px dotted #000; outline-offset: -2px; }
 .grid tbody tr.selected { background: var(--row-selected); }
 
+/* Fixed widths for narrow columns; "Reason for referral" takes the rest. */
 .col-conf { width: 90px; }
 .col-id { width: 120px; }
 .col-nhi { width: 90px; }
@@ -212,6 +224,8 @@ body {
 .col-flag { width: 70px; }
 
 .grid td.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* max-width: 0 is a table trick: the cell takes only the leftover width and truncates with "…"
+   instead of growing to fit the whole GP note. */
 .grid td.reason { max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .grid td.empty { padding: 12px; color: var(--muted); text-align: center; cursor: default; }
 .flag-review { color: var(--caution); font-weight: bold; }
@@ -228,6 +242,7 @@ body {
 
 .detail hr { margin: 10px 0 0; border: none; border-top: 1px solid var(--rule); }
 
+/* Two-column form layout, like the reference eReferral form. */
 .fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -241,6 +256,7 @@ body {
 .field-label .req { color: var(--required); }
 .field-value { display: block; padding: 2px 0; }
 
+/* Read-only values drawn as white boxes so they look like form inputs. */
 .input-box,
 .textarea-box {
   display: block;
@@ -260,12 +276,14 @@ body {
 
 .caution { margin: 6px 0 0; color: var(--caution); }
 
+/* Jev probabilities table. */
 .mini-grid { border-collapse: collapse; background: var(--white); border: 1px solid var(--border); }
 .mini-grid th,
 .mini-grid td { padding: 2px 10px; border: 1px solid #c9d3de; }
 .mini-grid th { background: linear-gradient(#fbfbfb, #e3e3e3); font-weight: normal; }
 .mini-grid tr.chosen td { font-weight: bold; background: var(--row-selected); }
 
+/* Old-style progress bar; the fill width is set per row by app.js. */
 .meter {
   display: inline-block;
   width: 90px;
@@ -280,6 +298,9 @@ body {
 
 .placeholder { padding: 16px 0; color: var(--muted); font-style: italic; }
 
+/* ---- small screens ----
+   Sidebar moves above the content as a 2x2 grid, the form goes single-column,
+   and the NHI/Age columns are hidden (they're still in the detail form). */
 @media (max-width: 720px) {
   body { padding: 0; }
   .layout { grid-template-columns: minmax(0, 1fr); }
