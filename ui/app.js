@@ -2,8 +2,8 @@
  * app.js: builds the Referral Triage page.
  *
  * Flow:
- *   1. data/referrals.js (written by export_ui.py) runs first and sets window.REFERRAL_DATA.
- *   2. load() reads that data and cleans each referral up with prepare().
+ *   1. load() fetches the triage view as JSON from the referral API (backend/app.py), served by
+ *      the same CloudFront distribution as this page, and cleans each referral up with prepare().
  *   3. render() groups referrals by urgency, sorts each group by Jev confidence, and draws the
  *      sidebar tabs, the table and the detail form.
  *   4. Clicking a tab, clicking a row, or typing in search changes `state`, then calls render() again.
@@ -11,7 +11,8 @@
  * No frameworks or libraries: plain JavaScript that runs in any modern browser.
  */
 
-const DATA_URL = "data/referrals.js";
+// Same-origin path CloudFront routes to the referral API Lambda (infra/cloudfront.tf).
+const DATA_URL = "/referrals";
 
 // Referrals below this Jev confidence get a "Review" flag.
 const LOW_CONFIDENCE = 0.6;
@@ -374,24 +375,29 @@ function showNotice(message, isError = false) {
   notice.hidden = false;
 }
 
-function load() {
-  // Set by data/referrals.js; undefined if that file is missing.
-  const data = window.REFERRAL_DATA;
-  if (!data) {
-    showNotice(`Unable to load ${DATA_URL}. Run "python export_ui.py" and then refresh this page.`, true);
-  } else {
+async function load() {
+  showNotice("Loading referrals…");
+  let data = null;
+  try {
+    const response = await fetch(DATA_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    data = await response.json();
+  } catch (error) {
+    showNotice(`Unable to load referrals from ${DATA_URL} (${error.message}). Try Refresh.`, true);
+  }
+  if (data) {
     const rows = Array.isArray(data) ? data : data.referrals ?? [];
     state.referrals = rows.map(prepare);
     state.generatedAt = data.generated_at ? new Date(data.generated_at) : null;
     showNotice(
-      `${state.referrals.length} referrals loaded successfully.${state.generatedAt ? ` Data exported ${state.generatedAt.toLocaleString()}.` : ""}`
+      `${state.referrals.length} referrals loaded successfully.${state.generatedAt ? ` Data as of ${state.generatedAt.toLocaleString()}.` : ""}`
     );
   }
   render();
 }
 
 document.getElementById("search").addEventListener("input", render);
-// Reloading the page re-reads data/referrals.js after a new export.
-document.getElementById("refresh").addEventListener("click", () => location.reload());
+// Re-fetches the latest referrals from the API.
+document.getElementById("refresh").addEventListener("click", load);
 
 load();

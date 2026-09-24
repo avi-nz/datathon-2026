@@ -3,9 +3,10 @@
   Referral Triage: coordinator queue UI.
 
   This page is only the skeleton. The sidebar tabs, table rows and detail form are filled in
-  by app.js using the data in data/referrals.js (written by export_ui.py).
+  by app.js using JSON from the referral API at /referrals (backend/app.py).
 
-  To use: run `python export_ui.py`, then open this file in a browser (double-clicking works).
+  Served from the website S3 bucket through CloudFront, which also routes /referrals to the API,
+  so it only works from the CloudFront URL, not when opened as a local file.
 -->
 
 <html lang="en">
@@ -22,7 +23,7 @@
       <span class="app-title">Referral Triage &mdash; Coordinator Queue</span>
       <div class="toolbar-buttons">
         <label class="search">Search <input type="search" id="search" aria-label="Search referrals"></label>
-        <!-- Refresh just reloads the page, which re-reads data/referrals.js after a new export. -->
+        <!-- Refresh re-fetches the referrals from the API. -->
         <button type="button" id="refresh" class="tb-button primary"><u>R</u>efresh</button>
       </div>
     </div>
@@ -61,9 +62,6 @@
     </div>
   </div>
 
-  <!-- Order matters: data/referrals.js sets window.REFERRAL_DATA, which app.js then reads.
-       If the data file is missing, the browser skips it and app.js shows an error banner. -->
-  <script src="data/referrals.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
