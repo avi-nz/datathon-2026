@@ -33,3 +33,7 @@ output "referral_format_stages" {
 output "output_ui_database" {
   value = snowflake_database.output_ui.name
 }
+
+output "referral_api_url" {
+  value = aws_lambda_function_url.referral_api.function_url
+}

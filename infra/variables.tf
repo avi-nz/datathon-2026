@@ -33,3 +33,28 @@ variable "referral_load_schedule_minutes" {
   type        = number
   default     = 60
 }
+
+# Snowflake login the referral API (lambda.tf) reads the triage view with: the
+# AI_PIPELINE_SVC user, same values as SNOWFLAKE_* in the repo-root .env.
+# Set via TF_VAR_snowflake_api_* in infra/.env.
+variable "snowflake_api_account" {
+  description = "Snowflake account identifier for the referral API (e.g. ORG-ACCOUNT)."
+  type        = string
+}
+
+variable "snowflake_api_user" {
+  description = "Snowflake user the referral API connects as."
+  type        = string
+}
+
+variable "snowflake_api_password" {
+  description = "Password for snowflake_api_user."
+  type        = string
+  sensitive   = true
+}
+
+variable "snowflake_api_warehouse" {
+  description = "Warehouse the referral API runs its query on."
+  type        = string
+  default     = "COMPUTE_WH"
+}

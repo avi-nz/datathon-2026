@@ -226,3 +226,7 @@ crash.log
 
 # Exported referral data for the UI (contains patient information)
 ui/data/
+
+# Lambda build output for the referral API (infra/lambda.tf)
+backend/build/
+backend/dist/
