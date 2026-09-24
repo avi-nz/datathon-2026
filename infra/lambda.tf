@@ -1,5 +1,6 @@
 # Referral API: a FastAPI app (backend/app.py) on Lambda that returns
-# OUTPUT_UI.PUBLIC.REFERRAL_TRIAGE_VIEW as JSON at GET https://<website CloudFront>/referrals.
+# OUTPUT_UI.PUBLIC.REFERRAL_TRIAGE_VIEW as JSON at GET https://<website CloudFront>/referrals,
+# and saves GP portal submissions (POST /interface1/upload, /interface2/upload) to S3.
 # Terraform builds the package too: pip-installs the dependencies with uv, then zips them.
 
 locals {
@@ -73,10 +74,24 @@ resource "aws_lambda_function" "referral_api" {
       SNOWFLAKE_USER      = var.snowflake_api_user
       SNOWFLAKE_PASSWORD  = var.snowflake_api_password
       SNOWFLAKE_WAREHOUSE = var.snowflake_api_warehouse
+      INTAKE_BUCKET       = var.intake_upload_bucket
       # The Snowflake connector writes cache files under $HOME; only /tmp is writable on Lambda.
       HOME = "/tmp"
     }
   }
+}
+
+# Lets the function save GP portal submissions into the intake bucket.
+resource "aws_iam_role_policy" "referral_api_upload" {
+  role = aws_iam_role.referral_api.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "s3:PutObject"
+      Resource = "arn:aws:s3:::${var.intake_upload_bucket}/*"
+    }]
+  })
 }
 
 # HTTPS URL for the function. AWS_IAM auth means only signed requests get through:

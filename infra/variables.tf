@@ -53,6 +53,14 @@ variable "snowflake_api_password" {
   sensitive   = true
 }
 
+# Where the GP portal pages upload referrals (POST /interface1|2/upload). This is the bucket the
+# Snowflake stages currently read from: a hand-made bucket, not the Terraform one in referral_intake.tf.
+variable "intake_upload_bucket" {
+  description = "S3 bucket the referral API writes GP portal submissions to (format-a/, format-b/)."
+  type        = string
+  default     = "referral-intake-bucket"
+}
+
 variable "snowflake_api_warehouse" {
   description = "Warehouse the referral API runs its query on."
   type        = string

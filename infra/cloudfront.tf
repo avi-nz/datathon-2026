@@ -72,6 +72,19 @@ resource "aws_cloudfront_distribution" "site" {
     compress                 = true
   }
 
+  # GP portal submissions (/interface1/upload, /interface2/upload) go to the API; the portal
+  # pages themselves (/interface1, /interface2) are served from S3 by the default behavior.
+  ordered_cache_behavior {
+    path_pattern             = "/interface*/upload"
+    target_origin_id         = local.referral_api_origin_id
+    viewer_protocol_policy   = "https-only"
+    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    compress                 = true
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
