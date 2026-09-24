@@ -1,45 +1,36 @@
 import json
-
 from jev import classify_referral
 from bedrock import generate_explanation
+from db import fetch_unprocessed_referrals, store_result
 
 
-def main():
-
-    # Read referral note from text file
-    with open("urgent_referral.txt", "r", encoding="utf-8") as file:
-        gp_note = file.read()
-
-    if not gp_note.strip():
-        print("Error: referral file is empty.")
-        return
-
-    # Classify the referral with Jev
+def process_referral(referral_id, gp_note):
     jev_result = classify_referral(gp_note)
-
     classification = jev_result["choice"]
     confidence = jev_result.get("confidence")
     probabilities = jev_result.get("probabilities", {})
 
-    # Generate explanation and recommendation
-    bedrock_result = generate_explanation(
-        gp_note,
-        classification
-    )
+    bedrock_result = generate_explanation(gp_note, classification)
 
-    # Combine the results
-    final_result = {
+    return {
+        "referral_id": referral_id,
         "classification": classification,
         "confidence": confidence,
         "probabilities": probabilities,
         "justification": bedrock_result["justification"],
-        "recommendation": bedrock_result["recommendation"]
+        "recommendation": bedrock_result["recommendation"],
     }
 
-    # Print final JSON
-    print("\nFinal result:")
-    print(json.dumps(final_result, indent=2))
 
+def main():
+    referrals = fetch_unprocessed_referrals()
+    print(f"Found {len(referrals)} unprocessed referrals")
+
+    for r in referrals:
+        print(f"Processing {r['referral_id']}...")
+        result = process_referral(r["referral_id"], r["reason_text"])
+        store_result(result)
+        print(json.dumps(result, indent=2))
 
 if __name__ == "__main__":
     main()
