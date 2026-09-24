@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region for the S3 bucket."
   type        = string
-  default     = "us-east-1"
+  default     = "ap-southeast-2"
 }
 
 variable "project_name" {
@@ -22,14 +22,14 @@ variable "price_class" {
   default     = "PriceClass_100"
 }
 
-variable "snowflake_role" {
-  description = "Snowflake role Terraform runs as."
-  type        = string
-  default     = "SYSADMIN"
-}
-
 variable "snowflake_warehouse_size" {
   description = "Size of the Snowflake warehouse."
   type        = string
   default     = "XSMALL"
+}
+
+variable "referral_load_schedule_minutes" {
+  description = "How often (minutes) Snowflake loads new referral files from S3 and standardizes them."
+  type        = number
+  default     = 60
 }

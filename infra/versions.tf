@@ -14,10 +14,19 @@ terraform {
 }
 
 # Credentials are read from environment variables so no secrets live in code:
-#   SNOWFLAKE_ORGANIZATION_NAME, SNOWFLAKE_ACCOUNT_NAME, SNOWFLAKE_USER,
-#   SNOWFLAKE_AUTHENTICATOR=SNOWFLAKE_JWT, SNOWFLAKE_PRIVATE_KEY (or SNOWFLAKE_PASSWORD)
+#   SNOWFLAKE_ORGANIZATION_NAME, SNOWFLAKE_ACCOUNT_NAME, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, ...
+# See infra/.env.example.
+
+# snowflake_table is still a "preview" resource in the provider and must be opted into.
+locals {
+  snowflake_preview_features = ["snowflake_table_resource"]
+}
+
+# Terraform runs as ACCOUNTADMIN, the same role used in Snowsight, so it owns
+# (and can change) everything, including objects created there by hand.
 provider "snowflake" {
-  role = var.snowflake_role
+  role                     = "ACCOUNTADMIN"
+  preview_features_enabled = local.snowflake_preview_features
 }
 
 provider "aws" {
