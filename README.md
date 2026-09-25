@@ -1,5 +1,11 @@
 # datathon-2026
 
+# COMPETITION RESULT:
+
+#### 1st Place
+
+----
+
 GP referral triage: GP portals submit referrals to S3, Snowflake loads and standardises them,
 a batch pipeline classifies urgency (Jev) and writes a justification (Claude Haiku on Bedrock),
 and a dashboard shows the results via an API on Lambda behind CloudFront.
