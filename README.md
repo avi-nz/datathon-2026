@@ -1,4 +1,4 @@
-# datathon-2026
+# UoA Data Science Club x dataengine Datathon 2026
 
 # COMPETITION RESULT:
 
