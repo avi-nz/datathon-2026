@@ -7,6 +7,42 @@
 
 ----
 
+## Problem
+Healthcare providers receive referrals from multiple channels
+and need to assess urgency, service eligibility, location,
+workforce availability and follow-up requirements. This
+process is often manual, time-sensitive and dependent on
+information spread across different systems, which can lead
+to delays, inconsistent prioritisation and limited visibility of
+workload
+
+## Our challenge
+Design an AI-assisted workflow that classifies and prioritises
+incoming healthcare referrals, then identifies where
+automation could support routine next steps, such as routing,
+status updates, follow-up reminders or escalation.
+
+## Expected outcomes
+Teams should:
+* Design a healthcare referral coordination data model
+* Build a pipeline for referral, client, service, location and
+workforce data
+* Use AI to classify, summarise or prioritise referrals
+* Produce a triage score, risk flag or prioritisation method
+* Identify where robotic or workflow automation could reduce
+manual effort
+* Present recommendations through a dashboard, workflow view
+or analytical output
+
+## What success looks like
+A healthcare coordinator can quickly understand which referrals
+need attention first, why they have been prioritised, and what
+action should happen next. The use case demonstrates how data,
+AI and automation can support faster, more consistent healthcare
+coordination while keeping human oversight in the process.
+
+----
+
 GP referral triage: GP portals submit referrals to S3, Snowflake loads and standardises them,
 a batch pipeline classifies urgency (Jev) and writes a justification (Claude Haiku on Bedrock),
 and a dashboard shows the results via an API on Lambda behind CloudFront.
@@ -64,3 +100,6 @@ Frontend (bucket and distribution IDs come from `terraform output`):
 aws s3 sync frontend/ s3://<bucket_name> --delete
 aws cloudfront create-invalidation --distribution-id <cloudfront_distribution_id> --paths '/*'
 ```
+
+## Screenshot of coordinator user interface
+<img width="799" height="875" alt="Screenshot 2026-09-26 at 00 30 00" src="https://github.com/user-attachments/assets/8a3db556-b67f-4871-93bb-5dfc44bc7699" />
