@@ -7,6 +7,12 @@
 
 ----
 
+### Architecture diagram
+
+[![Architecture diagram of avi-nz/datathon-2026](https://gitdiagram.com/avi-nz/datathon-2026/diagram.png)](https://gitdiagram.com/avi-nz/datathon-2026?utm_source=readme&utm_medium=picture)
+
+----
+
 ## Problem
 Healthcare providers receive referrals from multiple channels
 and need to assess urgency, service eligibility, location,
